@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>亚马逊图片一键生成器亚马逊1组 2.7.5</title>
+  <title>亚马逊图片一键生成器 2.7.5</title>
   <style>
     :root{
       --bg:#0b1020;
@@ -454,6 +454,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
     const DRAFT_KEY = 'amazon_image_generator_project_v2_7_5_draft';
+    const DEFAULT_IMAGE_MODEL = 'nano-banana-2';
 
     const DEFAULT_REQ_MAIN = `主图中的主卖产品只能使用上传的多角度白底产品参考图进行制作，禁止AI重新设计、重绘、脑补、改造、替换或美化产品本体。不得改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。主图必须为纯白背景电商白底图，不要场景，不要道具，不要文字，不要图标，不要徽章，不要额外元素。仅允许基于上传白底图进行抠图、融合、摆放、白底清理和轻微真实阴影优化，但不得造成任何产品外观变化。`;
 
@@ -470,12 +471,19 @@
       aplusMobile: { type: 'A+ 手机', count: 12, width: 1500, height: 1125 }
     };
 
+    function normalizeImageModel(model){
+      const m = String(model || '').trim();
+      if(!m) return DEFAULT_IMAGE_MODEL;
+      if(m === 'nano-banana-pro') return DEFAULT_IMAGE_MODEL;
+      return m;
+    }
+
     const state = {
       project: {
         apiKey: '',
         apiBase: 'https://api.poe.com/v1',
         promptModel: 'gpt-5.4',
-        imageModel: 'nano-banana-pro',
+        imageModel: DEFAULT_IMAGE_MODEL,
         imageApiMode: 'auto',
         models: [],
         requirementsText: '',
@@ -853,7 +861,7 @@
       const models = state.project.models || [];
 
       const fallbackPrompt = ['gpt-5.4','gpt-5','gpt-4.1','gpt-4o'];
-      const fallbackImage = ['nano-banana-pro','nano-banana','gpt-image-1','gemini-3-pro-image-preview'];
+      const fallbackImage = [DEFAULT_IMAGE_MODEL,'nano-banana-pro','nano-banana','gpt-image-1','gemini-3-pro-image-preview'];
 
       const promptOptions = [...new Set([
         state.project.promptModel,
@@ -862,15 +870,15 @@
       ].filter(Boolean))];
 
       const imageOptions = [...new Set([
-        state.project.imageModel,
-        ...models.filter(m => /banana|image|canvas|flux|sd|midjourney|vision|gemini/i.test(m)),
+        normalizeImageModel(state.project.imageModel),
+        ...models.filter(m => /banana|image|canvas|flux|sd|midjourney|vision|gemini/i.test(m)).map(normalizeImageModel),
         ...fallbackImage
       ].filter(Boolean))];
 
       promptSel.innerHTML = promptOptions.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
       imageSel.innerHTML = imageOptions.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
       promptSel.value = state.project.promptModel || 'gpt-5.4';
-      imageSel.value = state.project.imageModel || 'nano-banana-pro';
+      imageSel.value = normalizeImageModel(state.project.imageModel);
       modeSel.value = state.project.imageApiMode || 'auto';
     }
 
@@ -951,7 +959,7 @@
       state.project.apiKey = byId('apiKey').value.trim();
       state.project.apiBase = byId('apiBase').value.trim().replace(/\/+$/,'');
       state.project.promptModel = byId('promptModel').value || state.project.promptModel;
-      state.project.imageModel = byId('imageModel').value || state.project.imageModel;
+      state.project.imageModel = normalizeImageModel(byId('imageModel').value || state.project.imageModel);
       state.project.imageApiMode = byId('imageApiMode').value || state.project.imageApiMode;
       state.project.requirementsText = byId('requirementsText').value;
 
@@ -972,7 +980,7 @@
       return {
         apiBase: state.project.apiBase,
         promptModel: state.project.promptModel,
-        imageModel: state.project.imageModel,
+        imageModel: normalizeImageModel(state.project.imageModel),
         imageApiMode: state.project.imageApiMode,
         defaults: state.project.defaults,
         options: state.project.options,
@@ -1002,7 +1010,7 @@
       return {
         apiBase: state.project.apiBase,
         promptModel: state.project.promptModel,
-        imageModel: state.project.imageModel,
+        imageModel: normalizeImageModel(state.project.imageModel),
         imageApiMode: state.project.imageApiMode,
         defaults: state.project.defaults,
         options: state.project.options,
@@ -1102,7 +1110,7 @@
         state.project.apiKey = '';
         state.project.apiBase = data.apiBase || 'https://api.poe.com/v1';
         state.project.promptModel = data.promptModel || 'gpt-5.4';
-        state.project.imageModel = data.imageModel || 'nano-banana-pro';
+        state.project.imageModel = normalizeImageModel(data.imageModel || DEFAULT_IMAGE_MODEL);
         state.project.imageApiMode = data.imageApiMode || 'auto';
         state.project.models = [];
         state.project.requirementsText = data.requirementsText || '';
@@ -1195,7 +1203,7 @@
             apiKey: '',
             apiBase: data.apiBase || 'https://api.poe.com/v1',
             promptModel: data.promptModel || 'gpt-5.4',
-            imageModel: data.imageModel || 'nano-banana-pro',
+            imageModel: normalizeImageModel(data.imageModel || DEFAULT_IMAGE_MODEL),
             imageApiMode: data.imageApiMode || 'auto',
             models: [],
             requirementsText: data.requirementsText || '',
@@ -1272,7 +1280,8 @@
         state.project.models = names;
 
         if(names.includes('gpt-5.4')) state.project.promptModel = 'gpt-5.4';
-        if(names.includes('nano-banana-pro')) state.project.imageModel = 'nano-banana-pro';
+        if(names.includes(DEFAULT_IMAGE_MODEL)) state.project.imageModel = DEFAULT_IMAGE_MODEL;
+        else state.project.imageModel = normalizeImageModel(state.project.imageModel);
 
         renderAll();
         setStatus('globalStatus', `模型列表检测完成，共 ${names.length} 个模型`);
@@ -1398,7 +1407,7 @@
     }
 
     function getSelectedRefsForApi(){
-      const selected = state.project.referenceImages.find(x=>x.id === state.project.selectedReferenceImageId);
+      const selected = state.project.referenceImages.find(x => x.id === state.project.selectedReferenceImageId);
       const rest = state.project.referenceImages.filter(x => x.id !== state.project.selectedReferenceImageId);
       const arr = selected ? [selected, ...rest] : rest;
       return arr.filter(x => !!x.dataUrl).slice(0, 6);
@@ -1500,7 +1509,7 @@
     }
 
     async function poeGenerateImageViaResponses(task){
-      const model = state.project.imageModel || 'nano-banana-pro';
+      const model = normalizeImageModel(state.project.imageModel || DEFAULT_IMAGE_MODEL);
       const refImages = ensureReferenceImagesForTask(task).map(x => x.dataUrl).filter(Boolean);
       const aspectRatio = inferAspectRatio(task.width, task.height);
       const botSuffix = buildPoeBotStyleSuffix(aspectRatio);
@@ -1588,7 +1597,7 @@
     }
 
     async function poeGenerateImageViaChat(task){
-      const model = state.project.imageModel || 'nano-banana-pro';
+      const model = normalizeImageModel(state.project.imageModel || DEFAULT_IMAGE_MODEL);
       const refImages = ensureReferenceImagesForTask(task).map(x => x.dataUrl).filter(Boolean);
       const aspectRatio = inferAspectRatio(task.width, task.height);
       const botSuffix = buildPoeBotStyleSuffix(aspectRatio);
