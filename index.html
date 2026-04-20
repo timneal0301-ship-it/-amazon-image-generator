@@ -1,0 +1,2239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>亚马逊图片一键生成器 2.7.5</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a2f;
+      --line:#283558;
+      --text:#e9eefc;
+      --muted:#9db0de;
+      --primary:#5b8cff;
+      --primary-2:#7aa2ff;
+      --success:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --chip:#1d2b4b;
+      --pause:#a855f7;
+      --teal:#14b8a6;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#09101f 0%,#0d1430 100%);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    }
+    .container{max-width:1880px;margin:0 auto;padding:20px}
+    h1,h2,h3{margin:0 0 12px}
+    .topbar{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-bottom:16px}
+    .panel{
+      background:rgba(18,26,47,.94);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 12px 30px rgba(0,0,0,.25);
+      backdrop-filter:blur(8px);
+      overflow:hidden;
+      min-width:0;
+    }
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:8px;min-width:0}
+    .label{color:var(--muted);font-size:13px;margin-bottom:4px}
+    input[type="text"],input[type="password"],input[type="number"],textarea,select{
+      width:100%;
+      max-width:100%;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0d1529;
+      color:var(--text);
+      outline:none;
+    }
+    input[type="checkbox"]{transform:translateY(1px)}
+    input[type="file"]{
+      width:100%;
+      max-width:100%;
+      color:var(--text);
+      background:#0b1224;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px;
+      display:block;
+    }
+    textarea{min-height:110px;resize:vertical}
+    button{
+      border:none;background:var(--primary);color:white;
+      padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:600;
+    }
+    button:hover{background:var(--primary-2)}
+    button.secondary{background:#223153}
+    button.success{background:var(--success)}
+    button.warn{background:var(--warn);color:#1b1302}
+    button.danger{background:var(--danger)}
+    button.pause{background:var(--pause)}
+    button.teal{background:var(--teal)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .status{
+      padding:10px 12px;border-radius:12px;background:#0d1529;border:1px solid var(--line);
+      color:var(--muted);font-size:13px;min-height:44px;white-space:pre-wrap;word-break:break-word;
+    }
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{
+      background:var(--chip);border:1px solid var(--line);color:#d9e4ff;
+      padding:6px 10px;border-radius:999px;font-size:12px;
+    }
+    .chip.mode-banana{background:#3a2b0e;border-color:#8a6518;color:#fef3c7}
+    .chip.mode-required{background:#381818;border-color:#8d2d2d;color:#fecaca}
+    .main{display:grid;grid-template-columns:460px 1fr;gap:16px}
+    .sidebar,.workspace{display:flex;flex-direction:column;gap:16px;min-width:0}
+    .task-list{
+      display:flex;flex-direction:column;gap:10px;
+      max-height:calc(100vh - 250px);overflow:auto;padding-right:4px;
+    }
+    .task-item{
+      border:1px solid var(--line);border-radius:14px;padding:12px;background:#0d1529;
+      cursor:pointer;user-select:none;
+    }
+    .task-item.active{
+      border-color:var(--primary);
+      box-shadow:0 0 0 1px rgba(91,140,255,.35) inset;
+      background:#111b34;
+    }
+    .task-item.dragging{opacity:.45;border-style:dashed}
+    .task-item.drag-over{outline:2px dashed #79a0ff;outline-offset:2px}
+    .task-item .title{
+      font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;align-items:center;
+    }
+    .task-item .meta{color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+    .drag-handle{
+      color:var(--muted);font-size:14px;padding:2px 6px;border-radius:8px;
+      background:#0b1224;border:1px solid var(--line);
+    }
+    .editor-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:16px}
+    .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+    .thumb{
+      border:1px solid var(--line);border-radius:12px;padding:8px;background:#0d1529;min-width:0;cursor:pointer;
+    }
+    .thumb.active{
+      border-color:var(--primary);
+      box-shadow:0 0 0 1px rgba(91,140,255,.35) inset;
+      background:#111b34;
+    }
+    .thumb img{
+      width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px;display:block;background:#fff;
+    }
+    .result-card{
+      border:1px solid var(--line);border-radius:14px;background:#0d1529;padding:12px;min-width:0;
+    }
+    .result-preview{
+      width:100%;border-radius:12px;background:#08101f;border:1px solid var(--line);
+      overflow:hidden;display:flex;align-items:center;justify-content:center;
+      min-height:320px;position:relative;
+    }
+    .result-preview img{max-width:100%;max-height:560px;display:block}
+    .small{font-size:12px;color:var(--muted);line-height:1.6}
+    .progress{
+      height:12px;background:#0b1224;border:1px solid var(--line);
+      border-radius:999px;overflow:hidden;
+    }
+    .progress>div{
+      height:100%;width:0%;background:linear-gradient(90deg,#4f7cff,#78a6ff);transition:width .25s ease;
+    }
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch}
+    .upload-card{min-width:0;display:flex;flex-direction:column;gap:8px}
+    .drop{
+      border:1.5px dashed #38518a;border-radius:14px;padding:14px;color:var(--muted);
+      background:#0d1529;min-height:150px;display:flex;flex-direction:column;
+      justify-content:flex-start;align-items:stretch;overflow:hidden;
+    }
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .footer-note{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.7}
+    .switches{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+    .switch-item{
+      display:flex;gap:8px;align-items:center;color:var(--text);font-size:13px;
+      background:#0d1529;border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+    }
+    .config-card{border:1px solid var(--line);border-radius:14px;background:#0d1529;padding:12px}
+    .mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .gallery-wall{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+      gap:10px;max-height:560px;overflow:auto;padding-right:4px;
+    }
+    .wall-item{
+      border:1px solid var(--line);border-radius:12px;background:#0d1529;padding:8px;cursor:pointer;
+    }
+    .wall-item.active{
+      border-color:var(--primary);
+      box-shadow:0 0 0 1px rgba(91,140,255,.35) inset;
+      background:#111b34;
+    }
+    .wall-item img{
+      width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;display:block;background:#08101f;
+    }
+    .wall-title{margin-top:6px;font-size:12px;color:var(--text);word-break:break-word}
+    .wall-meta{font-size:11px;color:var(--muted);margin-top:4px}
+    @media (max-width:1280px){
+      .mini-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:1150px){
+      .topbar,.main,.editor-grid,.grid-4,.grid-5,.split,.grid-2{grid-template-columns:1fr}
+      .task-list{max-height:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>亚马逊图片一键生成器 2.7.5</h1>
+
+    <div class="topbar">
+      <div class="panel">
+        <h3>接口与模型</h3>
+        <div class="grid-2">
+          <div class="col">
+            <div class="label">POE API Key</div>
+            <input id="apiKey" type="password" placeholder="输入 POE API Key" />
+          </div>
+          <div class="col">
+            <div class="label">API Base URL</div>
+            <input id="apiBase" type="text" value="https://api.poe.com/v1" />
+          </div>
+        </div>
+
+        <div class="grid-5" style="margin-top:12px;">
+          <div class="col">
+            <div class="label">提示词模型</div>
+            <select id="promptModel"></select>
+          </div>
+          <div class="col">
+            <div class="label">图片模型</div>
+            <select id="imageModel"></select>
+          </div>
+          <div class="col">
+            <div class="label">图片接口模式</div>
+            <select id="imageApiMode">
+              <option value="auto">auto（responses → chat）</option>
+              <option value="responses">/v1/responses</option>
+              <option value="chat_completions">/chat/completions</option>
+            </select>
+          </div>
+          <div class="col" style="grid-column:span 2;">
+            <div class="label">说明</div>
+            <div class="status">已移除主产品自动识别、项目数据摘要、轻量诊断区；默认结构化要求模块已移动到底部。</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="toolbar">
+          <button id="btnDetectModels">检测模型列表</button>
+          <button class="secondary" id="btnSaveDraft">保存浏览器草稿</button>
+          <button class="secondary" id="btnLoadDraft">读取浏览器草稿</button>
+          <button class="secondary" id="btnExportJson">导出完整 JSON</button>
+          <button class="secondary" id="btnImportJson">导入 JSON</button>
+          <button class="secondary" id="btnClearSessionImages">清空当前会话图片缓存</button>
+          <button class="danger" id="btnClearLocalStorage">清空本页本地草稿</button>
+          <input id="importJsonInput" type="file" accept=".json,application/json" style="display:none;" />
+        </div>
+
+        <div class="footer-note">
+          当前版本统一走图片模型生成链路；如任务 requirement 明确要求产品不得改变，则强制要求附带参考图。
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>项目操作</h3>
+        <div class="chips" id="taskSpecChips"></div>
+
+        <div style="margin-top:12px" class="toolbar">
+          <button class="success" id="btnGenAllPrompts">一键批量生成全部提示词</button>
+          <button class="warn" id="btnGenAllImages">一键批量生成全部图片</button>
+          <button id="btnGenAllBoth">一键批量生成提示词 + 图片</button>
+          <button class="pause" id="btnPauseBatch">暂停生产</button>
+          <button class="secondary" id="btnResumeBatch">继续生成</button>
+          <button class="danger" id="btnStopBatch">停止生产</button>
+          <button class="secondary" id="btnExportAllImages">逐张导出全部图片</button>
+          <button class="teal" id="btnExportZip">ZIP 打包全部图片</button>
+        </div>
+
+        <div class="switches" style="margin-top:12px;">
+          <label class="switch-item">
+            <input id="skipExistingPrompts" type="checkbox" checked />
+            <span>跳过已生成提示词</span>
+          </label>
+          <label class="switch-item">
+            <input id="skipExistingImages" type="checkbox" checked />
+            <span>跳过已生成图片</span>
+          </label>
+          <label class="switch-item">
+            <input id="lockMainImage" type="checkbox" checked />
+            <span>主图锁定模式</span>
+          </label>
+        </div>
+
+        <div style="margin-top:12px" class="small">总体进度</div>
+        <div class="progress" style="margin-top:6px;"><div id="globalProgressBar"></div></div>
+        <div class="status" id="globalStatus" style="margin-top:10px;">等待操作</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <h3>任务规格配置</h3>
+      <div class="grid-4">
+        <div class="config-card">
+          <div class="label">主图</div>
+          <div class="mini-grid">
+            <div class="col"><div class="label">数量</div><input id="cfg_main_count" type="number" min="0" value="1" /></div>
+            <div class="col"><div class="label">宽</div><input id="cfg_main_width" type="number" min="1" value="2000" /></div>
+            <div class="col"><div class="label">高</div><input id="cfg_main_height" type="number" min="1" value="2000" /></div>
+          </div>
+        </div>
+
+        <div class="config-card">
+          <div class="label">附图</div>
+          <div class="mini-grid">
+            <div class="col"><div class="label">数量</div><input id="cfg_gallery_count" type="number" min="0" value="7" /></div>
+            <div class="col"><div class="label">宽</div><input id="cfg_gallery_width" type="number" min="1" value="2000" /></div>
+            <div class="col"><div class="label">高</div><input id="cfg_gallery_height" type="number" min="1" value="2000" /></div>
+          </div>
+        </div>
+
+        <div class="config-card">
+          <div class="label">A+ PC</div>
+          <div class="mini-grid">
+            <div class="col"><div class="label">数量</div><input id="cfg_apc_count" type="number" min="0" value="12" /></div>
+            <div class="col"><div class="label">宽</div><input id="cfg_apc_width" type="number" min="1" value="2440" /></div>
+            <div class="col"><div class="label">高</div><input id="cfg_apc_height" type="number" min="1" value="1000" /></div>
+          </div>
+        </div>
+
+        <div class="config-card">
+          <div class="label">A+ 手机</div>
+          <div class="mini-grid">
+            <div class="col"><div class="label">数量</div><input id="cfg_am_count" type="number" min="0" value="12" /></div>
+            <div class="col"><div class="label">宽</div><input id="cfg_am_width" type="number" min="1" value="1500" /></div>
+            <div class="col"><div class="label">高</div><input id="cfg_am_height" type="number" min="1" value="1125" /></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar" style="margin-top:12px;">
+        <button class="teal" id="btnRebuildTasksKeepData">按当前规格重建任务（尽量保留旧数据）</button>
+        <button class="secondary" id="btnRebuildTasksReset">按当前规格重建任务（清空任务数据）</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="sidebar">
+        <div class="panel">
+          <h3>素材输入</h3>
+          <div class="split">
+            <div class="upload-card">
+              <div class="label">上传设计需求表</div>
+              <div class="drop">
+                <input id="reqFileInput" type="file" accept=".txt,.md,.csv,.json,.xlsx,.xls,.doc,.docx,.pdf" />
+                <div class="small" style="margin-top:8px;">
+                  支持 txt / md / csv / json / xlsx / xls。<br>
+                  PDF / Word 前端版无法稳定提取全文，建议手动粘贴。
+                </div>
+              </div>
+            </div>
+            <div class="upload-card">
+              <div class="label">上传多角度白底图</div>
+              <div class="drop">
+                <input id="refImagesInput" type="file" accept="image/*" multiple />
+                <div class="small" style="margin-top:8px;">
+                  参考图只存在当前页面内存。<br>
+                  不保存到 localStorage，不导出到 JSON。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;" class="col">
+            <div class="label">设计需求表文本内容（可直接编辑）</div>
+            <textarea id="requirementsText" placeholder="建议包含：产品信息、卖点、每张图要求、文案要求、风格限制、品牌规范等。"></textarea>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div class="label">参考图预览（点击可设为当前优先参考图）</div>
+            <div id="refThumbs" class="thumbs"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>任务清单（支持拖拽排序）</h3>
+          <div class="small" style="margin-bottom:10px;">共 <span id="taskCount">0</span> 个任务，批量执行按当前顺序进行</div>
+          <div id="taskList" class="task-list"></div>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="panel">
+          <h3>当前任务编辑</h3>
+          <div class="editor-grid">
+            <div class="col">
+              <div class="row">
+                <div class="chip" id="currentTaskType">未选择任务</div>
+                <div class="chip" id="currentTaskSize">-</div>
+                <div class="chip" id="currentTaskIndex">-</div>
+                <div class="chip" id="currentTaskOrder">排序：-</div>
+                <div class="chip" id="currentTaskModeChip">模式：-</div>
+                <div class="chip" id="currentTaskRefRuleChip">参考图规则：-</div>
+              </div>
+
+              <div class="col" style="margin-top:10px;">
+                <div class="label">该图片的结构化要求</div>
+                <textarea id="taskRequirement" placeholder="可在这里给单张图补充要求"></textarea>
+              </div>
+
+              <div class="col">
+                <div class="label">生成提示词（可逐张编辑）</div>
+                <textarea id="taskPrompt" placeholder="这里会放 GPT 自动生成的高质量图片提示词"></textarea>
+              </div>
+
+              <div class="toolbar">
+                <button id="btnGenPromptForCurrent">生成当前提示词</button>
+                <button class="warn" id="btnGenImageForCurrent">生成当前图片</button>
+                <button class="secondary" id="btnSaveTaskEdits">保存当前编辑</button>
+              </div>
+            </div>
+
+            <div class="result-card">
+              <div class="small" style="margin-bottom:8px;">图片结果预览</div>
+              <div class="result-preview" id="resultPreview">
+                <span class="small">暂无图片</span>
+              </div>
+              <div class="toolbar" style="margin-top:12px;">
+                <button class="secondary" id="btnDownloadCurrent">下载当前图片</button>
+              </div>
+              <div class="status" id="currentTaskStatus" style="margin-top:10px;">等待操作</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>全部结果缩略图墙</h3>
+          <div id="galleryWall" class="gallery-wall"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h3>默认结构化要求统一配置</h3>
+      <div class="grid-2">
+        <div class="col">
+          <div class="label">主图默认 requirement</div>
+          <textarea id="defaultReqMain"></textarea>
+        </div>
+        <div class="col">
+          <div class="label">附图默认 requirement</div>
+          <textarea id="defaultReqGallery"></textarea>
+        </div>
+        <div class="col">
+          <div class="label">A+ PC 默认 requirement</div>
+          <textarea id="defaultReqApc"></textarea>
+        </div>
+        <div class="col">
+          <div class="label">A+ 手机默认 requirement</div>
+          <textarea id="defaultReqAmobile"></textarea>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:12px;">
+        <button class="teal" id="btnApplyDefaultReqToEmpty">应用默认 requirement 到空白任务</button>
+        <button class="secondary" id="btnForceApplyDefaultReqAll">强制覆盖全部任务 requirement</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+    const DRAFT_KEY = 'amazon_image_generator_project_v2_7_5_draft';
+
+    const DEFAULT_REQ_MAIN = `主图中的主卖产品只能使用上传的多角度白底产品参考图进行制作，禁止AI重新设计、重绘、脑补、改造、替换或美化产品本体。不得改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。主图必须为纯白背景电商白底图，不要场景，不要道具，不要文字，不要图标，不要徽章，不要额外元素。仅允许基于上传白底图进行抠图、融合、摆放、白底清理和轻微真实阴影优化，但不得造成任何产品外观变化。`;
+
+    const DEFAULT_REQ_GALLERY = `附图中如果需要显示主卖产品，主卖产品只能基于上传的多角度白底产品参考图进行融合制作，禁止AI重新设计、重绘、脑补、改造、替换或美化主产品本体。不得改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。可以生成场景、背景、光影、道具和卖点辅助元素，但主产品本体必须与上传白底图一致，不允许发生任何视觉变化。`;
+
+    const DEFAULT_REQ_APC = `A+ PC 图片中如果需要显示主卖产品，主卖产品只能基于上传的多角度白底产品参考图进行融合制作，禁止AI重新设计、重绘、脑补、改造、替换或美化主产品本体。不得改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。允许生成版式氛围、背景和辅助说明元素，但主产品必须与上传白底图保持一致，不允许出现任何产品变化。`;
+
+    const DEFAULT_REQ_AMOBILE = `A+ 手机图片中如果需要显示主卖产品，主卖产品只能基于上传的多角度白底产品参考图进行融合制作，禁止AI重新设计、重绘、脑补、改造、替换或美化主产品本体。不得改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。允许生成移动端适配背景、氛围和辅助表达元素，但主产品必须与上传白底图保持一致，不允许出现任何产品变化。`;
+
+    const DEFAULT_TASK_SPECS = {
+      main: { type: '主图', count: 1, width: 2000, height: 2000 },
+      gallery: { type: '附图', count: 7, width: 2000, height: 2000 },
+      aplusPc: { type: 'A+ PC', count: 12, width: 2440, height: 1000 },
+      aplusMobile: { type: 'A+ 手机', count: 12, width: 1500, height: 1125 }
+    };
+
+    const state = {
+      project: {
+        apiKey: '',
+        apiBase: 'https://api.poe.com/v1',
+        promptModel: 'gpt-5.4',
+        imageModel: 'nano-banana-pro',
+        imageApiMode: 'auto',
+        models: [],
+        requirementsText: '',
+        requirementFileName: '',
+        referenceImages: [],
+        referenceImageNames: [],
+        selectedReferenceImageId: null,
+        tasks: [],
+        defaults: {
+          main: DEFAULT_REQ_MAIN,
+          gallery: DEFAULT_REQ_GALLERY,
+          aplusPc: DEFAULT_REQ_APC,
+          aplusMobile: DEFAULT_REQ_AMOBILE
+        },
+        options: {
+          skipExistingPrompts: true,
+          skipExistingImages: true,
+          lockMainImage: true
+        },
+        taskSpecs: JSON.parse(JSON.stringify(DEFAULT_TASK_SPECS)),
+        updatedAt: null
+      },
+      currentTaskId: null,
+      busy: false,
+      paused: false,
+      stopped: false,
+      batchMode: null,
+      batchCursor: 0,
+      dragTaskId: null
+    };
+
+    function byId(id){ return document.getElementById(id); }
+    function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+    function setStatus(el, text){ byId(el).textContent = text; }
+    function clampInt(value, minValue, fallback){
+      const n = parseInt(value, 10);
+      return Number.isFinite(n) && n >= minValue ? n : fallback;
+    }
+    function safeTrimText(text, maxLen){ return String(text || '').slice(0, maxLen); }
+    function escapeHtml(s=''){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function appendTaskLog(task, text){
+      task.logs.push(`[${new Date().toLocaleTimeString()}] ${text}`);
+      if(task.logs.length > 120) task.logs = task.logs.slice(-120);
+    }
+    function getCurrentTask(){ return state.project.tasks.find(t => t.id === state.currentTaskId) || null; }
+
+    function getDefaultRequirementByType(type){
+      const d = state.project.defaults || {};
+      if(type === '主图') return d.main || DEFAULT_REQ_MAIN;
+      if(type === '附图') return d.gallery || DEFAULT_REQ_GALLERY;
+      if(type === 'A+ PC') return d.aplusPc || DEFAULT_REQ_APC;
+      if(type === 'A+ 手机') return d.aplusMobile || DEFAULT_REQ_AMOBILE;
+      return d.gallery || DEFAULT_REQ_GALLERY;
+    }
+
+    function normalizeTaskRequirement(task){
+      const val = String(task.requirement || '').trim();
+      return val || getDefaultRequirementByType(task.type);
+    }
+
+    function getTaskStableKey(task){
+      return task.stableKey || `${task.type}__${task.originIndex || task.index}`;
+    }
+
+    function createTask(group, i){
+      return {
+        id: '',
+        stableKey: `${group.type}__${i}`,
+        originIndex: i,
+        type: group.type,
+        index: i,
+        width: clampInt(group.width, 1, 2000),
+        height: clampInt(group.height, 1, 2000),
+        title: `${group.type} ${i}`,
+        requirement: getDefaultRequirementByType(group.type),
+        prompt: '',
+        image: null,
+        imageName: '',
+        promptStatus: '未生成',
+        imageStatus: '未生成',
+        logs: []
+      };
+    }
+
+    function makeTasksFromSpecs(specs){
+      const arr = [];
+      let uid = 1;
+      const groups = [ specs.main, specs.gallery, specs.aplusPc, specs.aplusMobile ];
+      for(const group of groups){
+        const count = clampInt(group.count, 0, 0);
+        for(let i = 1; i <= count; i++){
+          const task = createTask(group, i);
+          task.id = 'task_' + uid++;
+          arr.push(task);
+        }
+      }
+      return arr;
+    }
+
+    function initProject(){
+      state.project.taskSpecs = deepClone(DEFAULT_TASK_SPECS);
+      state.project.tasks = makeTasksFromSpecs(state.project.taskSpecs);
+      state.currentTaskId = state.project.tasks[0]?.id || null;
+    }
+
+    function refreshTaskOrderMeta(){
+      state.project.tasks.forEach((task, idx)=>{
+        task.order = idx + 1;
+        task.title = `${task.type} ${task.index}`;
+      });
+    }
+
+    function isStrictProductLocked(task){
+      const req = normalizeTaskRequirement(task);
+      const text = String(req || '');
+      const hints = [
+        '只能使用上传',
+        '只能基于上传',
+        '上传的多角度白底',
+        '禁止AI重新设计',
+        '不得改变',
+        '不允许发生任何视觉变化',
+        '主产品必须与上传白底图保持一致',
+        '只允许基于上传白底图'
+      ];
+      return hints.some(k => text.includes(k));
+    }
+
+    function requiresReferenceImage(task){
+      return !!task && isStrictProductLocked(task);
+    }
+
+    function taskGenerationMode(task){
+      if(!task) return { mode: 'unknown', label: '模式：-', refLabel: '参考图规则：-' };
+      return {
+        mode: 'banana',
+        label: '模式：统一图片生成',
+        refLabel: requiresReferenceImage(task) ? '参考图规则：强制需要' : '参考图规则：建议附带'
+      };
+    }
+
+    function renderTaskSpecInputs(){
+      const s = state.project.taskSpecs;
+      byId('cfg_main_count').value = s.main.count;
+      byId('cfg_main_width').value = s.main.width;
+      byId('cfg_main_height').value = s.main.height;
+      byId('cfg_gallery_count').value = s.gallery.count;
+      byId('cfg_gallery_width').value = s.gallery.width;
+      byId('cfg_gallery_height').value = s.gallery.height;
+      byId('cfg_apc_count').value = s.aplusPc.count;
+      byId('cfg_apc_width').value = s.aplusPc.width;
+      byId('cfg_apc_height').value = s.aplusPc.height;
+      byId('cfg_am_count').value = s.aplusMobile.count;
+      byId('cfg_am_width').value = s.aplusMobile.width;
+      byId('cfg_am_height').value = s.aplusMobile.height;
+    }
+
+    function renderTaskSpecChips(){
+      const s = state.project.taskSpecs;
+      byId('taskSpecChips').innerHTML = [
+        `主图 ${s.main.count} 张 · ${s.main.width}×${s.main.height}`,
+        `附图 ${s.gallery.count} 张 · ${s.gallery.width}×${s.gallery.height}`,
+        `A+ PC ${s.aplusPc.count} 张 · ${s.aplusPc.width}×${s.aplusPc.height}`,
+        `A+ 手机 ${s.aplusMobile.count} 张 · ${s.aplusMobile.width}×${s.aplusMobile.height}`
+      ].map(x => `<div class="chip">${escapeHtml(x)}</div>`).join('');
+    }
+
+    async function fileToDataURL(file){
+      return new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function readTextFile(file){
+      return new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsText(file, 'utf-8');
+      });
+    }
+
+    async function readExcelFile(file){
+      if(typeof XLSX === 'undefined') throw new Error('未加载 XLSX 解析库');
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sections = [];
+      workbook.SheetNames.forEach((sheetName, idx) => {
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        sections.push(`【工作表 ${idx + 1}：${sheetName}】`);
+        if(!rows.length){
+          sections.push('（空表）','');
+          return;
+        }
+        const headers = (rows[0] || []).map(v => String(v || '').trim());
+        for(let i = 1; i < rows.length; i++){
+          const row = rows[i] || [];
+          if(!row.some(v => String(v || '').trim() !== '')) continue;
+          sections.push(`- 第 ${i} 行`);
+          headers.forEach((h, j) => {
+            const key = h || `字段${j + 1}`;
+            const value = String(row[j] || '').trim();
+            if(value) sections.push(`  ${key}：${value}`);
+          });
+        }
+        sections.push('');
+      });
+      return sections.join('\n').trim();
+    }
+
+    function renderRefThumbs(){
+      const box = byId('refThumbs');
+      box.innerHTML = '';
+      for(const item of state.project.referenceImages){
+        const active = item.id === state.project.selectedReferenceImageId;
+        const div = document.createElement('div');
+        div.className = 'thumb' + (active ? ' active' : '');
+        div.innerHTML = `
+          <img src="${item.dataUrl}" alt="${item.name}" />
+          <div class="small" style="margin-top:6px;word-break:break-all;">${escapeHtml(item.name)}</div>
+        `;
+        div.onclick = ()=>{
+          state.project.selectedReferenceImageId = item.id;
+          renderAll();
+        };
+        box.appendChild(div);
+      }
+    }
+
+    function renderTaskList(){
+      refreshTaskOrderMeta();
+      const list = byId('taskList');
+      list.innerHTML = '';
+
+      state.project.tasks.forEach((task, idx)=>{
+        const isActive = task.id === state.currentTaskId;
+        const div = document.createElement('div');
+        div.className = 'task-item' + (isActive ? ' active' : '');
+        div.setAttribute('draggable', 'true');
+        div.dataset.taskId = task.id;
+
+        div.onclick = ()=>{
+          saveCurrentTaskEditsToState();
+          state.currentTaskId = task.id;
+          renderAll();
+        };
+
+        div.addEventListener('dragstart', (e)=>{
+          state.dragTaskId = task.id;
+          div.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          try{ e.dataTransfer.setData('text/plain', task.id); }catch(err){}
+        });
+
+        div.addEventListener('dragend', ()=>{
+          div.classList.remove('dragging');
+          state.dragTaskId = null;
+          list.querySelectorAll('.task-item').forEach(el=>el.classList.remove('drag-over'));
+        });
+
+        div.addEventListener('dragover', (e)=>{
+          e.preventDefault();
+          div.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        div.addEventListener('dragleave', ()=> div.classList.remove('drag-over'));
+
+        div.addEventListener('drop', (e)=>{
+          e.preventDefault();
+          div.classList.remove('drag-over');
+          const sourceId = state.dragTaskId || e.dataTransfer.getData('text/plain');
+          const targetId = task.id;
+          if(sourceId && targetId && sourceId !== targetId) moveTaskById(sourceId, targetId);
+        });
+
+        const modeInfo = taskGenerationMode(task);
+
+        div.innerHTML = `
+          <div class="title">
+            <span>${escapeHtml(task.title)}</span>
+            <span class="drag-handle">拖拽</span>
+          </div>
+          <div class="meta">
+            <span>排序：${idx + 1}</span>
+            <span>${task.width}×${task.height}</span>
+            <span>${escapeHtml(modeInfo.label.replace('模式：',''))}</span>
+            <span>提示词：${escapeHtml(task.promptStatus)}</span>
+            <span>图片：${escapeHtml(task.imageStatus)}</span>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+
+      byId('taskCount').textContent = state.project.tasks.length;
+    }
+
+    function renderCurrentTask(){
+      const task = getCurrentTask();
+      if(!task){
+        byId('currentTaskType').textContent = '未选择任务';
+        byId('currentTaskSize').textContent = '-';
+        byId('currentTaskIndex').textContent = '-';
+        byId('currentTaskOrder').textContent = '排序：-';
+        byId('currentTaskModeChip').textContent = '模式：-';
+        byId('currentTaskRefRuleChip').textContent = '参考图规则：-';
+        byId('taskRequirement').value = '';
+        byId('taskPrompt').value = '';
+        byId('resultPreview').innerHTML = `<span class="small">暂无图片</span>`;
+        byId('currentTaskStatus').textContent = '等待操作';
+        return;
+      }
+
+      if(!task.requirement || !String(task.requirement).trim()) task.requirement = getDefaultRequirementByType(task.type);
+
+      const order = state.project.tasks.findIndex(t => t.id === task.id) + 1;
+      const modeInfo = taskGenerationMode(task);
+
+      byId('currentTaskType').textContent = task.type;
+      byId('currentTaskSize').textContent = `${task.width}×${task.height}`;
+      byId('currentTaskIndex').textContent = `第 ${task.index} 张`;
+      byId('currentTaskOrder').textContent = `排序：${order}`;
+      byId('currentTaskModeChip').textContent = modeInfo.label;
+      byId('currentTaskRefRuleChip').textContent = modeInfo.refLabel;
+
+      byId('currentTaskModeChip').className = 'chip mode-banana';
+      byId('currentTaskRefRuleChip').className = 'chip' + (requiresReferenceImage(task) ? ' mode-required' : '');
+
+      byId('taskRequirement').value = task.requirement || '';
+      byId('taskPrompt').value = task.prompt || '';
+
+      byId('resultPreview').innerHTML = task.image
+        ? `<img src="${task.image}" alt="${escapeHtml(task.title)}" />`
+        : `<span class="small">暂无图片</span>`;
+
+      byId('currentTaskStatus').textContent = task.logs.slice(-16).join('\n') || '等待操作';
+      byId('btnPauseBatch').disabled = !state.busy || state.paused || state.stopped;
+      byId('btnResumeBatch').disabled = !state.paused || state.stopped;
+      byId('btnStopBatch').disabled = !state.busy && !state.paused;
+    }
+
+    function renderGalleryWall(){
+      const wall = byId('galleryWall');
+      const tasksWithImage = state.project.tasks.filter(t => !!t.image);
+      if(!tasksWithImage.length){
+        wall.innerHTML = `<div class="small">暂无已生成图片</div>`;
+        return;
+      }
+      wall.innerHTML = tasksWithImage.map(task => `
+        <div class="wall-item ${task.id === state.currentTaskId ? 'active' : ''}" data-task-id="${escapeHtml(task.id)}">
+          <img src="${task.image}" alt="${escapeHtml(task.title)}" />
+          <div class="wall-title">${escapeHtml(task.title)}</div>
+          <div class="wall-meta">${task.width}×${task.height}</div>
+        </div>
+      `).join('');
+      wall.querySelectorAll('.wall-item').forEach(el=>{
+        el.onclick = ()=>{
+          saveCurrentTaskEditsToState();
+          state.currentTaskId = el.getAttribute('data-task-id');
+          renderAll();
+        };
+      });
+    }
+
+    function renderModelSelects(){
+      const promptSel = byId('promptModel');
+      const imageSel = byId('imageModel');
+      const modeSel = byId('imageApiMode');
+      const models = state.project.models || [];
+
+      const fallbackPrompt = ['gpt-5.4','gpt-5','gpt-4.1','gpt-4o'];
+      const fallbackImage = ['nano-banana-pro','nano-banana','gpt-image-1','gemini-3-pro-image-preview'];
+
+      const promptOptions = [...new Set([
+        state.project.promptModel,
+        ...models.filter(m => /gpt|o1|o3|o4/i.test(m)),
+        ...fallbackPrompt
+      ].filter(Boolean))];
+
+      const imageOptions = [...new Set([
+        state.project.imageModel,
+        ...models.filter(m => /banana|image|canvas|flux|sd|midjourney|vision|gemini/i.test(m)),
+        ...fallbackImage
+      ].filter(Boolean))];
+
+      promptSel.innerHTML = promptOptions.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      imageSel.innerHTML = imageOptions.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      promptSel.value = state.project.promptModel || 'gpt-5.4';
+      imageSel.value = state.project.imageModel || 'nano-banana-pro';
+      modeSel.value = state.project.imageApiMode || 'auto';
+    }
+
+    function renderDefaults(){
+      byId('defaultReqMain').value = state.project.defaults.main || DEFAULT_REQ_MAIN;
+      byId('defaultReqGallery').value = state.project.defaults.gallery || DEFAULT_REQ_GALLERY;
+      byId('defaultReqApc').value = state.project.defaults.aplusPc || DEFAULT_REQ_APC;
+      byId('defaultReqAmobile').value = state.project.defaults.aplusMobile || DEFAULT_REQ_AMOBILE;
+
+      byId('skipExistingPrompts').checked = !!state.project.options.skipExistingPrompts;
+      byId('skipExistingImages').checked = !!state.project.options.skipExistingImages;
+      byId('lockMainImage').checked = !!state.project.options.lockMainImage;
+    }
+
+    function renderProgress(){
+      const promptDone = state.project.tasks.filter(t => t.prompt && t.prompt.trim()).length;
+      const imageDone = state.project.tasks.filter(t => !!t.image).length;
+      const percent = state.project.tasks.length
+        ? Math.round(((promptDone + imageDone) / (state.project.tasks.length * 2)) * 100)
+        : 0;
+      byId('globalProgressBar').style.width = percent + '%';
+    }
+
+    function renderAll(){
+      byId('apiKey').value = state.project.apiKey || '';
+      byId('apiBase').value = state.project.apiBase || 'https://api.poe.com/v1';
+      byId('requirementsText').value = state.project.requirementsText || '';
+      renderTaskSpecInputs();
+      renderTaskSpecChips();
+      renderRefThumbs();
+      renderTaskList();
+      renderModelSelects();
+      renderDefaults();
+      renderCurrentTask();
+      renderGalleryWall();
+      renderProgress();
+    }
+
+    function saveCurrentTaskEditsToState(){
+      const task = getCurrentTask();
+      if(!task) return;
+      task.requirement = String(byId('taskRequirement').value || '').trim() || getDefaultRequirementByType(task.type);
+      task.prompt = byId('taskPrompt').value;
+      if(task.prompt && task.prompt.trim() && task.promptStatus === '未生成') task.promptStatus = '已生成';
+      state.project.updatedAt = new Date().toISOString();
+    }
+
+    function readTaskSpecsFromInputs(){
+      return {
+        main: {
+          type: '主图',
+          count: clampInt(byId('cfg_main_count').value, 0, 1),
+          width: clampInt(byId('cfg_main_width').value, 1, 2000),
+          height: clampInt(byId('cfg_main_height').value, 1, 2000)
+        },
+        gallery: {
+          type: '附图',
+          count: clampInt(byId('cfg_gallery_count').value, 0, 7),
+          width: clampInt(byId('cfg_gallery_width').value, 1, 2000),
+          height: clampInt(byId('cfg_gallery_height').value, 1, 2000)
+        },
+        aplusPc: {
+          type: 'A+ PC',
+          count: clampInt(byId('cfg_apc_count').value, 0, 12),
+          width: clampInt(byId('cfg_apc_width').value, 1, 2440),
+          height: clampInt(byId('cfg_apc_height').value, 1, 1000)
+        },
+        aplusMobile: {
+          type: 'A+ 手机',
+          count: clampInt(byId('cfg_am_count').value, 0, 12),
+          width: clampInt(byId('cfg_am_width').value, 1, 1500),
+          height: clampInt(byId('cfg_am_height').value, 1, 1125)
+        }
+      };
+    }
+
+    function syncTopInputsToState(){
+      state.project.apiKey = byId('apiKey').value.trim();
+      state.project.apiBase = byId('apiBase').value.trim().replace(/\/+$/,'');
+      state.project.promptModel = byId('promptModel').value || state.project.promptModel;
+      state.project.imageModel = byId('imageModel').value || state.project.imageModel;
+      state.project.imageApiMode = byId('imageApiMode').value || state.project.imageApiMode;
+      state.project.requirementsText = byId('requirementsText').value;
+
+      state.project.defaults.main = byId('defaultReqMain').value.trim() || DEFAULT_REQ_MAIN;
+      state.project.defaults.gallery = byId('defaultReqGallery').value.trim() || DEFAULT_REQ_GALLERY;
+      state.project.defaults.aplusPc = byId('defaultReqApc').value.trim() || DEFAULT_REQ_APC;
+      state.project.defaults.aplusMobile = byId('defaultReqAmobile').value.trim() || DEFAULT_REQ_AMOBILE;
+
+      state.project.options.skipExistingPrompts = byId('skipExistingPrompts').checked;
+      state.project.options.skipExistingImages = byId('skipExistingImages').checked;
+      state.project.options.lockMainImage = byId('lockMainImage').checked;
+
+      state.project.taskSpecs = readTaskSpecsFromInputs();
+      state.project.updatedAt = new Date().toISOString();
+    }
+
+    function buildTinyDraftForStorage(){
+      return {
+        apiBase: state.project.apiBase,
+        promptModel: state.project.promptModel,
+        imageModel: state.project.imageModel,
+        imageApiMode: state.project.imageApiMode,
+        defaults: state.project.defaults,
+        options: state.project.options,
+        taskSpecs: state.project.taskSpecs,
+        requirementFileName: state.project.requirementFileName || '',
+        requirementsText: safeTrimText(state.project.requirementsText, 5000),
+        updatedAt: new Date().toISOString(),
+        currentTaskId: state.currentTaskId,
+        selectedReferenceImageId: state.project.selectedReferenceImageId,
+        taskMini: (state.project.tasks || []).map((task, order) => ({
+          stableKey: getTaskStableKey(task),
+          type: task.type,
+          index: task.index,
+          originIndex: task.originIndex || task.index,
+          width: task.width,
+          height: task.height,
+          order: order + 1,
+          requirement: safeTrimText(normalizeTaskRequirement(task), 2000),
+          prompt: safeTrimText(task.prompt, 3200),
+          promptStatus: task.promptStatus || '未生成',
+          imageStatus: task.imageStatus || '未生成'
+        }))
+      };
+    }
+
+    function buildFullExportProject(){
+      return {
+        apiBase: state.project.apiBase,
+        promptModel: state.project.promptModel,
+        imageModel: state.project.imageModel,
+        imageApiMode: state.project.imageApiMode,
+        defaults: state.project.defaults,
+        options: state.project.options,
+        taskSpecs: state.project.taskSpecs,
+        requirementsText: state.project.requirementsText || '',
+        requirementFileName: state.project.requirementFileName || '',
+        referenceImageNames: (state.project.referenceImages || []).map(x => x.name).slice(0, 100),
+        selectedReferenceImageId: state.project.selectedReferenceImageId,
+        updatedAt: new Date().toISOString(),
+        tasks: (state.project.tasks || []).map((task, order) => ({
+          stableKey: getTaskStableKey(task),
+          id: task.id,
+          type: task.type,
+          index: task.index,
+          originIndex: task.originIndex || task.index,
+          order: order + 1,
+          width: task.width,
+          height: task.height,
+          title: task.title,
+          requirement: normalizeTaskRequirement(task),
+          prompt: task.prompt || '',
+          promptStatus: task.promptStatus || '未生成',
+          imageStatus: task.imageStatus || '未生成'
+        }))
+      };
+    }
+
+    function safeSetLocalStorage(key, value){
+      try{ localStorage.removeItem(key); }catch(e){}
+      try{
+        localStorage.setItem(key, value);
+        return { ok:true };
+      }catch(err){
+        return { ok:false, error: err };
+      }
+    }
+
+    function saveDraft(){
+      syncTopInputsToState();
+      saveCurrentTaskEditsToState();
+      const res = safeSetLocalStorage(DRAFT_KEY, JSON.stringify(buildTinyDraftForStorage()));
+      if(res.ok) setStatus('globalStatus','已保存浏览器草稿（极小）');
+      else setStatus('globalStatus','浏览器草稿保存失败：' + res.error.message);
+      renderProgress();
+    }
+
+    function rebuildTaskIds(tasks){
+      return tasks.map((task, idx)=>({ ...task, id: 'task_' + (idx + 1) }));
+    }
+
+    function hydrateTasksBySpec(taskMini, taskSpecs){
+      const base = makeTasksFromSpecs(taskSpecs);
+      if(!Array.isArray(taskMini) || !taskMini.length) return base;
+
+      const map = new Map();
+      taskMini.forEach(t=>{
+        const key = t.stableKey || `${t.type}__${t.originIndex || t.index}`;
+        map.set(key, t);
+      });
+
+      let merged = base.map(task => {
+        const key = getTaskStableKey(task);
+        const old = map.get(key);
+        if(!old) return task;
+        return {
+          ...task,
+          stableKey: key,
+          originIndex: old.originIndex || task.originIndex || task.index,
+          requirement: (old.requirement && String(old.requirement).trim()) ? old.requirement : getDefaultRequirementByType(task.type),
+          prompt: old.prompt || '',
+          promptStatus: old.promptStatus || '未生成',
+          imageStatus: old.imageStatus || '未生成',
+          image: null,
+          imageName: '',
+          logs: []
+        };
+      });
+
+      if(taskMini.some(t => Number.isFinite(t.order))){
+        merged.sort((a,b)=>{
+          const oa = map.get(getTaskStableKey(a))?.order ?? 9999;
+          const ob = map.get(getTaskStableKey(b))?.order ?? 9999;
+          return oa - ob;
+        });
+      }
+      return merged;
+    }
+
+    function loadDraft(){
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if(!raw){
+        setStatus('globalStatus','浏览器里没有草稿');
+        return;
+      }
+      try{
+        const data = JSON.parse(raw);
+        state.project.apiKey = '';
+        state.project.apiBase = data.apiBase || 'https://api.poe.com/v1';
+        state.project.promptModel = data.promptModel || 'gpt-5.4';
+        state.project.imageModel = data.imageModel || 'nano-banana-pro';
+        state.project.imageApiMode = data.imageApiMode || 'auto';
+        state.project.models = [];
+        state.project.requirementsText = data.requirementsText || '';
+        state.project.requirementFileName = data.requirementFileName || '';
+        state.project.referenceImages = [];
+        state.project.referenceImageNames = [];
+        state.project.selectedReferenceImageId = data.selectedReferenceImageId || null;
+        state.project.defaults = {
+          main: data?.defaults?.main || DEFAULT_REQ_MAIN,
+          gallery: data?.defaults?.gallery || DEFAULT_REQ_GALLERY,
+          aplusPc: data?.defaults?.aplusPc || DEFAULT_REQ_APC,
+          aplusMobile: data?.defaults?.aplusMobile || DEFAULT_REQ_AMOBILE
+        };
+        state.project.options = {
+          skipExistingPrompts: data?.options?.skipExistingPrompts !== false,
+          skipExistingImages: data?.options?.skipExistingImages !== false,
+          lockMainImage: data?.options?.lockMainImage !== false
+        };
+        state.project.taskSpecs = data?.taskSpecs ? data.taskSpecs : deepClone(DEFAULT_TASK_SPECS);
+        state.project.tasks = rebuildTaskIds(hydrateTasksBySpec(data.taskMini, state.project.taskSpecs));
+        state.project.updatedAt = data.updatedAt || null;
+        state.currentTaskId = state.project.tasks[0]?.id || null;
+        state.busy = false;
+        state.paused = false;
+        state.stopped = false;
+        state.batchMode = null;
+        state.batchCursor = 0;
+        renderAll();
+        setStatus('globalStatus','已读取浏览器草稿（不含 API Key / 参考图 / 结果图）');
+      }catch(err){
+        setStatus('globalStatus','读取浏览器草稿失败：' + err.message);
+      }
+    }
+
+    function exportJson(){
+      syncTopInputsToState();
+      saveCurrentTaskEditsToState();
+      const blob = new Blob([JSON.stringify(buildFullExportProject(), null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'amazon-image-project-v2.7.5-full.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setStatus('globalStatus','已导出完整 JSON（不含 API Key / 参考图 dataUrl / 结果图）');
+    }
+
+    function importJsonFile(file){
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          const taskSpecs = data?.taskSpecs ? data.taskSpecs : deepClone(DEFAULT_TASK_SPECS);
+          const baseTasks = makeTasksFromSpecs(taskSpecs);
+
+          const oldMap = new Map();
+          if(Array.isArray(data.tasks)){
+            data.tasks.forEach((t, i)=>{
+              const key = t.stableKey || `${t.type}__${t.originIndex || t.index || (i+1)}`;
+              oldMap.set(key, t);
+            });
+          }
+
+          let mergedTasks = baseTasks.map(task => {
+            const key = getTaskStableKey(task);
+            const t = oldMap.get(key);
+            if(!t) return task;
+            return {
+              ...task,
+              stableKey: key,
+              originIndex: t.originIndex || task.originIndex || task.index,
+              requirement: (t.requirement && String(t.requirement).trim()) ? t.requirement : getDefaultRequirementByType(task.type),
+              prompt: t.prompt || '',
+              image: null,
+              imageName: '',
+              promptStatus: t.promptStatus || '未生成',
+              imageStatus: t.imageStatus || '未生成',
+              logs: []
+            };
+          });
+
+          if(Array.isArray(data.tasks) && data.tasks.some(t => Number.isFinite(t.order))){
+            mergedTasks.sort((a,b)=>{
+              const oa = oldMap.get(getTaskStableKey(a))?.order ?? 9999;
+              const ob = oldMap.get(getTaskStableKey(b))?.order ?? 9999;
+              return oa - ob;
+            });
+          }
+
+          state.project = {
+            apiKey: '',
+            apiBase: data.apiBase || 'https://api.poe.com/v1',
+            promptModel: data.promptModel || 'gpt-5.4',
+            imageModel: data.imageModel || 'nano-banana-pro',
+            imageApiMode: data.imageApiMode || 'auto',
+            models: [],
+            requirementsText: data.requirementsText || '',
+            requirementFileName: data.requirementFileName || '',
+            referenceImages: [],
+            referenceImageNames: Array.isArray(data.referenceImageNames) ? data.referenceImageNames : [],
+            selectedReferenceImageId: data.selectedReferenceImageId || null,
+            defaults: {
+              main: data?.defaults?.main || DEFAULT_REQ_MAIN,
+              gallery: data?.defaults?.gallery || DEFAULT_REQ_GALLERY,
+              aplusPc: data?.defaults?.aplusPc || DEFAULT_REQ_APC,
+              aplusMobile: data?.defaults?.aplusMobile || DEFAULT_REQ_AMOBILE
+            },
+            options: {
+              skipExistingPrompts: data?.options?.skipExistingPrompts !== false,
+              skipExistingImages: data?.options?.skipExistingImages !== false,
+              lockMainImage: data?.options?.lockMainImage !== false
+            },
+            taskSpecs,
+            tasks: rebuildTaskIds(mergedTasks),
+            updatedAt: data.updatedAt || null
+          };
+
+          state.currentTaskId = state.project.tasks[0]?.id || null;
+          state.busy = false;
+          state.paused = false;
+          state.stopped = false;
+          state.batchMode = null;
+          state.batchCursor = 0;
+          renderAll();
+          setStatus('globalStatus','已导入完整 JSON');
+        }catch(err){
+          setStatus('globalStatus','导入 JSON 失败：' + err.message);
+        }
+      };
+      reader.readAsText(file,'utf-8');
+    }
+
+    function clearLocalDraft(){
+      try{ localStorage.removeItem(DRAFT_KEY); }catch(e){}
+      setStatus('globalStatus','已清空本页浏览器草稿');
+    }
+
+    function extractModelNames(data){
+      const out = [];
+      const push = item=>{
+        if(typeof item === 'string') out.push(item);
+        else if(item?.id) out.push(item.id);
+        else if(item?.name) out.push(item.name);
+      };
+      if(Array.isArray(data?.data)) data.data.forEach(push);
+      if(Array.isArray(data?.models)) data.models.forEach(push);
+      if(Array.isArray(data)) data.forEach(push);
+      return [...new Set(out.filter(Boolean))];
+    }
+
+    async function detectModels(){
+      syncTopInputsToState();
+      if(!state.project.apiKey){
+        setStatus('globalStatus','请先输入 POE API Key');
+        return;
+      }
+      try{
+        const res = await fetch(state.project.apiBase + '/models', {
+          method:'GET',
+          headers:{ 'Authorization':'Bearer ' + state.project.apiKey }
+        });
+        const rawText = await res.text();
+        let data = null;
+        try{ data = JSON.parse(rawText); }catch{ data = rawText; }
+        if(!res.ok) throw new Error(`HTTP ${res.status} ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+
+        const names = extractModelNames(data);
+        state.project.models = names;
+
+        if(names.includes('gpt-5.4')) state.project.promptModel = 'gpt-5.4';
+        if(names.includes('nano-banana-pro')) state.project.imageModel = 'nano-banana-pro';
+
+        renderAll();
+        setStatus('globalStatus', `模型列表检测完成，共 ${names.length} 个模型`);
+      }catch(err){
+        setStatus('globalStatus','检测模型失败：' + err.message);
+      }
+    }
+
+    async function loadImage(src){
+      return new Promise((resolve,reject)=>{
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = ()=>resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function buildReferenceSummary(){
+      const selected = state.project.referenceImages.find(x=>x.id === state.project.selectedReferenceImageId);
+      return `
+【白底参考图信息】
+参考图数量：${state.project.referenceImages.length}
+当前优先参考图：${selected?.name || '未选择'}
+如 requirement 明确要求产品不能改变，则图像模型必须把白底图作为真实 image input 使用，而不是只当作文字描述。
+      `.trim();
+    }
+
+    function buildProductLockRules(task){
+      if(task.type === '主图'){
+        return `
+【主产品锁定规则】
+主卖产品必须严格使用上传的多角度白底参考图进行制作。
+禁止重新设计、重绘、脑补、改造、替换、夸张美化或结构再生成。
+禁止改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。
+主图必须是纯白背景，不要场景，不要道具，不要文字，不要图标，不要徽章，不要额外元素。
+如果无法在不改变产品的前提下完成画面，则宁可保持简单，也不要修改产品。
+        `.trim();
+      }
+      return `
+【主产品锁定规则】
+如果画面中需要出现主卖产品，主卖产品必须严格使用上传的多角度白底参考图进行融合制作。
+禁止重新设计、重绘、脑补、改造、替换、夸张美化或结构再生成。
+禁止改变主产品的外观、结构、比例、材质、颜色、纹理、表面细节、边缘轮廓、开孔、接口、按键、零件数量与位置。
+可以生成背景、场景、光影、道具和卖点辅助元素，但主产品本体必须与上传白底图保持一致。
+如果无法在不改变产品的前提下完成画面，则减少场景复杂度，也不要修改产品。
+      `.trim();
+    }
+
+    async function poeChatCompletion(userPrompt){
+      syncTopInputsToState();
+      if(!state.project.apiKey) throw new Error('请先输入 POE API Key');
+
+      const payload = {
+        model: state.project.promptModel || 'gpt-5.4',
+        messages: [
+          {
+            role:'system',
+            content:
+`你是资深亚马逊电商视觉总监、资深广告创意策划和高级提示词工程师。
+你的任务是根据设计需求表、白底参考图信息、当前图片类型与尺寸、主产品锁定规则，生成一条高质量中文图片生成提示词，用于图像模型出图。
+必须严格遵守“该图片的结构化要求”和“主产品锁定规则”。
+如果要求里提到：
+1. 只能使用上传多角度白底图；
+2. 不做任何外观改变；
+3. 如果出现主卖产品只能基于上传白底图融合制作；
+则必须把这些限制写进最终提示词，且不能弱化。
+如果当前是主图，且启用了主图锁定模式，则必须明确写入：
+- 纯白背景
+- 电商白底主图
+- 不要场景
+- 不要道具
+- 不要文字
+- 不要图标
+- 不要徽章
+- 不要额外元素
+- 不改变产品外观、结构、材质、颜色、比例和细节
+输出只返回最终提示词正文，不要解释，不要加标题，不要用 markdown。`
+          },
+          { role:'user', content:userPrompt }
+        ],
+        temperature: 0.5
+      };
+
+      const res = await fetch(state.project.apiBase + '/chat/completions', {
+        method:'POST',
+        headers:{
+          'Authorization':'Bearer ' + state.project.apiKey,
+          'Content-Type':'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const rawText = await res.text();
+      let data = null;
+      try{ data = JSON.parse(rawText); }catch{ data = rawText; }
+
+      if(!res.ok) throw new Error(`HTTP ${res.status} ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+
+      const text =
+        data?.choices?.[0]?.message?.content ||
+        data?.output_text ||
+        data?.text ||
+        (typeof data === 'string' ? data : '');
+
+      if(!text) throw new Error('提示词模型未返回有效内容');
+      return String(text).trim();
+    }
+
+    function inferAspectRatio(width, height){
+      const ratio = width / height;
+      const presets = [
+        { key:'1:1', v:1 }, { key:'2:3', v:2/3 }, { key:'3:2', v:3/2 }, { key:'3:4', v:3/4 },
+        { key:'4:3', v:4/3 }, { key:'4:5', v:4/5 }, { key:'5:4', v:5/4 }, { key:'9:16', v:9/16 },
+        { key:'16:9', v:16/9 }, { key:'21:9', v:21/9 }
+      ];
+      let best = presets[0], minDiff = Infinity;
+      for(const p of presets){
+        const diff = Math.abs(ratio - p.v);
+        if(diff < minDiff){ minDiff = diff; best = p; }
+      }
+      return best.key;
+    }
+
+    function getSelectedRefsForApi(){
+      const selected = state.project.referenceImages.find(x=>x.id === state.project.selectedReferenceImageId);
+      const rest = state.project.referenceImages.filter(x => x.id !== state.project.selectedReferenceImageId);
+      const arr = selected ? [selected, ...rest] : rest;
+      return arr.filter(x => !!x.dataUrl).slice(0, 6);
+    }
+
+    function ensureReferenceImagesForTask(task){
+      const refs = getSelectedRefsForApi();
+      if(requiresReferenceImage(task) && !refs.length){
+        throw new Error('当前任务要求产品不能变，且必须附带白底参考图；当前未检测到可用参考图，已禁止提交生成');
+      }
+      return refs;
+    }
+
+    function buildImageModelHardRules(task){
+      if(task.type === '主图'){
+        return [
+          'Main product must be strictly based on the uploaded multi-angle white-background reference photos.',
+          'Use uploaded product photos as the only source of the main product.',
+          'Do not redesign the product.',
+          'Do not redraw the product.',
+          'Do not alter the product appearance.',
+          'Do not change shape, structure, color, material, texture, proportions, components, edges, openings, ports, buttons, or surface details.',
+          'Keep the product identical to the uploaded reference images.',
+          'Pure white background.',
+          'E-commerce white background hero image.',
+          'No scene.',
+          'No props.',
+          'No text.',
+          'No icons.',
+          'No badges.',
+          'No extra elements.'
+        ].join('\n');
+      }
+      return [
+        'If the main product appears in the image, it must be strictly based on the uploaded multi-angle white-background reference photos.',
+        'Use uploaded product photos as the only source of the main product.',
+        'Do not redesign the main product.',
+        'Do not redraw the main product.',
+        'Do not alter the main product appearance.',
+        'Do not change shape, structure, color, material, texture, proportions, components, edges, openings, ports, buttons, or surface details.',
+        'Keep the main product identical to the uploaded reference images.',
+        'The background, scene, lighting, and supporting elements may be generated, but the product itself must remain unchanged.'
+      ].join('\n');
+    }
+
+    function extractImageCandidatesUniversal(data){
+      const out = [];
+      function push(v, mimeType){
+        if(!v) return;
+        if(typeof v === 'string'){
+          if(v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:image/')){
+            out.push(v); return;
+          }
+          const compact = v.replace(/\s+/g,'');
+          if(/^[A-Za-z0-9+/=]+$/.test(compact) && compact.length > 200){
+            out.push(`data:${mimeType || 'image/png'};base64,${compact}`);
+          }
+        }
+      }
+      function walk(node, inheritedMime){
+        if(!node) return;
+        if(typeof node === 'string') return push(node, inheritedMime);
+        if(Array.isArray(node)) return node.forEach(item=>walk(item, inheritedMime));
+        if(typeof node !== 'object') return;
+        const mime = node.mime_type || node.mimeType || inheritedMime;
+        push(node.url, mime);
+        push(node.image_url, mime);
+        push(node.b64_json, 'image/png');
+        push(node.data, mime);
+        push(node.inline_data, mime);
+        push(node.base64, mime);
+        if(node.image_url?.url) push(node.image_url.url, mime);
+        if(node.inline_data?.data) push(node.inline_data.data, node.inline_data.mime_type || mime);
+        if(node.image?.url) push(node.image.url, mime);
+        if(node.image?.data) push(node.image.data, node.image.mime_type || mime);
+        for(const key of Object.keys(node)) walk(node[key], mime);
+      }
+      walk(data, null);
+      return [...new Set(out)];
+    }
+
+    function extractTextFromResponse(data){
+      const texts = [];
+      function walk(node){
+        if(!node) return;
+        if(Array.isArray(node)) return node.forEach(walk);
+        if(typeof node !== 'object') return;
+        if(typeof node.text === 'string') texts.push(node.text);
+        if(typeof node.output_text === 'string') texts.push(node.output_text);
+        if(typeof node.content === 'string') texts.push(node.content);
+        for(const key of Object.keys(node)) walk(node[key]);
+      }
+      walk(data);
+      return texts.join('\n').trim();
+    }
+
+    function buildPoeBotStyleSuffix(aspectRatio){
+      return ['', '--image_only true', `--aspect_ratio ${aspectRatio}`].join('\n');
+    }
+
+    async function poeGenerateImageViaResponses(task){
+      const model = state.project.imageModel || 'nano-banana-pro';
+      const refImages = ensureReferenceImagesForTask(task).map(x => x.dataUrl).filter(Boolean);
+      const aspectRatio = inferAspectRatio(task.width, task.height);
+      const botSuffix = buildPoeBotStyleSuffix(aspectRatio);
+
+      const finalPrompt = [
+        task.prompt,
+        buildReferenceSummary(),
+        `目标输出尺寸：${task.width}×${task.height}`,
+        `目标宽高比：${aspectRatio}`,
+        buildImageModelHardRules(task),
+        '请直接生成最终商品图片。',
+        '必须严格遵守结构化要求中的产品一致性限制。',
+        'The uploaded white-background reference images must be used as real image inputs, not only as text description.',
+        'Do not regenerate the main product from imagination.',
+        'Composite or preserve the referenced product faithfully.',
+        'Return image only.',
+        'No text.',
+        'No explanation.',
+        'No markdown.',
+        '只返回图片，不返回任何文字内容。',
+        botSuffix
+      ].join('\n');
+
+      const contentBlocks = [{ type: 'input_text', text: finalPrompt }];
+      for(const img of refImages) contentBlocks.push({ type: 'input_image', image_url: img });
+
+      const payloadCandidates = [
+        {
+          label: 'payload#1 input:role-content[]',
+          body: {
+            model,
+            input: [{ role: 'user', content: contentBlocks }],
+            image_only: true,
+            aspect_ratio: aspectRatio
+          }
+        },
+        {
+          label: 'payload#2 input:string+images',
+          body: {
+            model,
+            input: finalPrompt,
+            input_images: refImages,
+            image_only: true,
+            aspect_ratio: aspectRatio
+          }
+        }
+      ];
+
+      let lastError = null;
+      for(const candidate of payloadCandidates){
+        try{
+          appendTaskLog(task, `responses 尝试：${candidate.label}，附带参考图 ${refImages.length} 张`);
+          const res = await fetch(state.project.apiBase + '/responses', {
+            method:'POST',
+            headers:{
+              'Authorization':'Bearer ' + state.project.apiKey,
+              'Content-Type':'application/json'
+            },
+            body: JSON.stringify(candidate.body)
+          });
+
+          const rawText = await res.text();
+          let data = null;
+          try{ data = JSON.parse(rawText); }catch{ data = rawText; }
+
+          if(!res.ok) throw new Error(`HTTP ${res.status} ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+
+          const candidates = extractImageCandidatesUniversal(data);
+          if(candidates.length){
+            appendTaskLog(task, `responses 成功：${candidate.label}`);
+            return candidates[0];
+          }
+
+          const maybeText = extractTextFromResponse(data);
+          if(maybeText) appendTaskLog(task, `responses 返回的是文本，不是图片。实际模型：${data?.model || model}`);
+          else appendTaskLog(task, `responses 未识别到图片字段。实际模型：${data?.model || model}`);
+
+          lastError = new Error('responses 接口调用成功，但未返回可识别图片数据');
+        }catch(err){
+          lastError = err;
+          appendTaskLog(task, `responses 失败：${candidate.label} / ${err.message}`);
+        }
+      }
+      throw lastError || new Error('responses 图片生成失败');
+    }
+
+    async function poeGenerateImageViaChat(task){
+      const model = state.project.imageModel || 'nano-banana-pro';
+      const refImages = ensureReferenceImagesForTask(task).map(x => x.dataUrl).filter(Boolean);
+      const aspectRatio = inferAspectRatio(task.width, task.height);
+      const botSuffix = buildPoeBotStyleSuffix(aspectRatio);
+
+      const finalPrompt = [
+        task.prompt,
+        buildReferenceSummary(),
+        `目标输出尺寸：${task.width}×${task.height}`,
+        `目标宽高比：${aspectRatio}`,
+        buildImageModelHardRules(task),
+        '请直接生成最终商品图片。',
+        '必须严格遵守结构化要求中的产品一致性限制。',
+        'The uploaded white-background reference images must be used as real image inputs, not only as text description.',
+        'Do not regenerate the main product from imagination.',
+        'Composite or preserve the referenced product faithfully.',
+        'Return image only.',
+        'No text.',
+        'No explanation.',
+        'No markdown.',
+        '只返回图片，不返回任何文字内容。',
+        botSuffix
+      ].join('\n');
+
+      const payload = {
+        model,
+        messages: [{ role: 'user', content: finalPrompt }],
+        modalities: ['image'],
+        reference_images: refImages
+      };
+
+      const res = await fetch(state.project.apiBase + '/chat/completions', {
+        method:'POST',
+        headers:{
+          'Authorization':'Bearer ' + state.project.apiKey,
+          'Content-Type':'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const rawText = await res.text();
+      let data = null;
+      try{ data = JSON.parse(rawText); }catch{ data = rawText; }
+
+      if(!res.ok) throw new Error(`HTTP ${res.status} ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+
+      const candidates = extractImageCandidatesUniversal(data);
+      if(candidates.length){
+        appendTaskLog(task, `chat/completions 成功。实际模型：${data?.model || model}，附带参考图 ${refImages.length} 张`);
+        return candidates[0];
+      }
+
+      const maybeText = extractTextFromResponse(data);
+      if(maybeText) appendTaskLog(task, `chat/completions 返回的是文本，不是图片。实际模型：${data?.model || model}`);
+      else appendTaskLog(task, `chat/completions 未识别到图片字段。实际模型：${data?.model || model}`);
+
+      throw new Error('chat/completions 接口调用成功，但未返回可识别图片数据');
+    }
+
+    async function resizeImageToTarget(src, targetW, targetH){
+      const img = await loadImage(src);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+
+      const scale = Math.max(targetW / img.width, targetH / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const dx = (targetW - drawW) / 2;
+      const dy = (targetH - drawH) / 2;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,targetW,targetH);
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+      return canvas.toDataURL('image/png');
+    }
+
+    async function poeGenerateImage(task){
+      syncTopInputsToState();
+      if(!state.project.apiKey) throw new Error('请先输入 POE API Key');
+      if(!task.prompt?.trim()) throw new Error('当前任务没有提示词');
+
+      ensureReferenceImagesForTask(task);
+
+      const mode = state.project.imageApiMode || 'auto';
+      let lastError = null;
+      const runners = mode === 'responses'
+        ? [{ name: 'responses', run: () => poeGenerateImageViaResponses(task) }]
+        : mode === 'chat_completions'
+        ? [{ name: 'chat_completions', run: () => poeGenerateImageViaChat(task) }]
+        : [
+            { name: 'responses', run: () => poeGenerateImageViaResponses(task) },
+            { name: 'chat_completions', run: () => poeGenerateImageViaChat(task) }
+          ];
+
+      for(const runner of runners){
+        try{
+          appendTaskLog(task, `尝试接口：${runner.name}`);
+          const img = await runner.run();
+          appendTaskLog(task, `接口成功：${runner.name}`);
+          return await resizeImageToTarget(img, task.width, task.height);
+        }catch(err){
+          lastError = err;
+          appendTaskLog(task, `失败：${runner.name} / ${err.message}`);
+          renderAll();
+        }
+      }
+      throw new Error(lastError?.message || '图片生成失败');
+    }
+
+    function buildPromptGenerationInput(task){
+      const refSummary = state.project.referenceImages.length
+        ? `参考图数量：${state.project.referenceImages.length} 张。当前优先参考图：${state.project.referenceImages.find(x=>x.id===state.project.selectedReferenceImageId)?.name || '未选择'}。这些图为多角度白底产品图，生成时必须把主产品视为固定主体，不得重绘、改造、变色、变材质、变结构、变比例。`
+        : '当前没有参考图。';
+
+      const lockMain = state.project.options.lockMainImage && task.type === '主图';
+
+      return `
+请为下面这张亚马逊商品图片生成高质量中文图片提示词。
+
+【全局设计需求表】
+${state.project.requirementsText || '无'}
+
+【当前图片任务】
+类型：${task.type}
+序号：第 ${task.index} 张
+目标尺寸：${task.width}×${task.height}
+当前执行顺序：第 ${state.project.tasks.findIndex(t=>t.id===task.id)+1} 个
+生成模式：统一图片生成模式
+
+【该图片的结构化要求】
+${normalizeTaskRequirement(task)}
+
+${buildProductLockRules(task)}
+
+【参考图信息】
+${refSummary}
+
+【主图锁定模式】
+${lockMain ? '已开启。主图必须为纯白背景电商白底主图，不要场景、不要道具、不要文字、不要图标、不要徽章、不要额外元素，且不得改变产品外观。' : '未开启或当前不是主图。'}
+
+要求：
+1. 必须严格执行该图片的结构化要求；
+2. 必须严格执行主产品锁定规则，不允许弱化；
+3. 必须使用“设计需求表 + 白底参考图信息”共同生成提示词；
+4. 如果是主图，必须强调只能基于上传多角度白底图制作主图，不可改变产品外观；
+5. 如果是附图/A+图，只要画面出现主卖产品，就必须强调只能基于上传白底图融合制作；
+6. 如果主图锁定模式已开启且当前是主图，提示词必须显式包含纯白底、无场景、无道具、无文字、无图标、无徽章、无额外元素；
+7. 提示词必须适合图片生成模型直接使用；
+8. 输出只要最终提示词正文。
+      `.trim();
+    }
+
+    async function generatePromptForTask(task, options = {}){
+      const skip = options.skipIfExists ?? false;
+      task.requirement = normalizeTaskRequirement(task);
+
+      if(skip && task.prompt && task.prompt.trim()){
+        task.promptStatus = '已跳过';
+        appendTaskLog(task, '检测到已有提示词，已跳过');
+        renderAll();
+        return task.prompt;
+      }
+
+      task.promptStatus = '生成中';
+      appendTaskLog(task, '开始生成提示词（已使用设计需求表 + 白底参考图信息）');
+      renderAll();
+
+      const prompt = await poeChatCompletion(buildPromptGenerationInput(task));
+      task.prompt = prompt;
+      task.promptStatus = '已生成';
+      appendTaskLog(task, '提示词生成完成');
+      state.project.updatedAt = new Date().toISOString();
+      renderAll();
+      return prompt;
+    }
+
+    async function generateImageForTask(task, options = {}){
+      const skip = options.skipIfExists ?? false;
+      task.requirement = normalizeTaskRequirement(task);
+
+      if(skip && task.image){
+        task.imageStatus = '已跳过';
+        appendTaskLog(task, '检测到已有图片，已跳过');
+        renderAll();
+        return task.image;
+      }
+
+      if(requiresReferenceImage(task)) ensureReferenceImagesForTask(task);
+
+      task.imageStatus = '生成中';
+      appendTaskLog(task, '开始生成图片：统一图片模型模式（如有参考图将真实附带）');
+      renderAll();
+
+      if(!task.prompt?.trim()) throw new Error('当前任务没有提示词');
+
+      const img = await poeGenerateImage(task);
+      task.image = img;
+      task.imageName = sanitizeFileName(`${task.title}-${task.width}x${task.height}.png`);
+      task.imageStatus = '已生成';
+      appendTaskLog(task, '图片生成完成');
+
+      state.project.updatedAt = new Date().toISOString();
+      renderAll();
+      return img;
+    }
+
+    function sanitizeFileName(name){
+      return name.replace(/[\\/:*?"<>|]+/g,'_');
+    }
+
+    function pauseBatch(){
+      if(!state.busy) return;
+      state.paused = true;
+      setStatus('globalStatus', '批量任务已暂停，等待继续生成');
+      renderAll();
+    }
+
+    function stopBatch(){
+      state.stopped = true;
+      state.paused = false;
+      state.busy = false;
+      setStatus('globalStatus', '批量任务已停止');
+      renderAll();
+    }
+
+    async function waitIfPaused(){
+      while(state.paused && !state.stopped) await new Promise(r => setTimeout(r, 300));
+    }
+
+    function shouldSkipPrompt(task){
+      return state.project.options.skipExistingPrompts && !!(task.prompt && task.prompt.trim());
+    }
+
+    function shouldSkipImage(task){
+      return state.project.options.skipExistingImages && !!task.image;
+    }
+
+    async function runBatch(mode, resume = false){
+      if(state.busy && !resume) return;
+      syncTopInputsToState();
+      saveCurrentTaskEditsToState();
+
+      if(!state.project.apiKey){
+        setStatus('globalStatus','请先输入 POE API Key');
+        return;
+      }
+
+      if(!resume){
+        state.busy = true;
+        state.paused = false;
+        state.stopped = false;
+        state.batchMode = mode;
+        state.batchCursor = 0;
+      }else{
+        state.busy = true;
+        state.paused = false;
+        state.stopped = false;
+        if(!state.batchMode) state.batchMode = mode || 'both';
+      }
+
+      try{
+        const queue = state.project.tasks.slice();
+
+        for(let i = state.batchCursor; i < queue.length; i++){
+          if(state.stopped) break;
+          state.batchCursor = i;
+          const task = queue[i];
+          state.currentTaskId = task.id;
+          renderAll();
+
+          await waitIfPaused();
+          if(state.stopped) return;
+
+          setStatus('globalStatus', `处理中：${task.title}`);
+
+          try{
+            if(state.batchMode === 'prompts' || state.batchMode === 'both'){
+              if(shouldSkipPrompt(task)){
+                task.promptStatus = '已跳过';
+                appendTaskLog(task, '已有提示词，批量任务自动跳过');
+              }else{
+                await generatePromptForTask(task, { skipIfExists:false });
+              }
+            }
+
+            await waitIfPaused();
+            if(state.stopped) return;
+
+            if(state.batchMode === 'images' || state.batchMode === 'both'){
+              if(!task.prompt?.trim()){
+                if(shouldSkipPrompt(task)) task.promptStatus = '已跳过';
+                else{
+                  appendTaskLog(task, '缺少提示词，自动先生成提示词');
+                  await generatePromptForTask(task, { skipIfExists:false });
+                }
+              }
+
+              if(shouldSkipImage(task)){
+                task.imageStatus = '已跳过';
+                appendTaskLog(task, '已有图片，批量任务自动跳过');
+              }else{
+                await generateImageForTask(task, { skipIfExists:false });
+              }
+            }
+          }catch(err){
+            if(task.promptStatus === '生成中') task.promptStatus = '失败';
+            if(task.imageStatus === '生成中') task.imageStatus = '失败';
+            appendTaskLog(task, '失败：' + err.message);
+            renderAll();
+          }
+
+          const percent = queue.length ? Math.round((i + 1) / queue.length * 100) : 0;
+          byId('globalProgressBar').style.width = percent + '%';
+        }
+
+        state.busy = false;
+        state.paused = false;
+        if(!state.stopped){
+          state.batchMode = null;
+          state.batchCursor = 0;
+          setStatus('globalStatus','批量任务执行完成');
+        }
+        renderAll();
+      }catch(err){
+        state.busy = false;
+        setStatus('globalStatus','批量任务异常中断：' + err.message);
+        renderAll();
+      }
+    }
+
+    function resumeBatch(){
+      if(!state.paused || state.stopped) return;
+      setStatus('globalStatus', '正在继续生成...');
+      runBatch(state.batchMode || 'both', true);
+    }
+
+    function downloadDataUrl(dataUrl, filename){
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      a.click();
+    }
+
+    async function exportAllImages(){
+      const tasks = state.project.tasks.filter(t=>t.image);
+      if(!tasks.length){
+        setStatus('globalStatus','没有可导出的图片');
+        return;
+      }
+      for(const task of tasks){
+        downloadDataUrl(task.image, task.imageName || sanitizeFileName(`${task.title}.png`));
+        await new Promise(r=>setTimeout(r, 200));
+      }
+      setStatus('globalStatus', `已触发下载 ${tasks.length} 张图片`);
+    }
+
+    function dataUrlToUint8Array(dataUrl){
+      const parts = dataUrl.split(',');
+      const meta = parts[0] || '';
+      const body = parts[1] || '';
+      const binary = /;base64/i.test(meta) ? atob(body) : decodeURIComponent(body);
+      const bytes = new Uint8Array(binary.length);
+      for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    async function exportZip(){
+      if(typeof JSZip === 'undefined'){
+        setStatus('globalStatus', '未加载 JSZip，无法打包 ZIP');
+        return;
+      }
+      const tasks = state.project.tasks.filter(t => t.image);
+      if(!tasks.length){
+        setStatus('globalStatus', '没有可打包的图片');
+        return;
+      }
+
+      setStatus('globalStatus', `正在打包 ZIP，共 ${tasks.length} 张图片...`);
+      const zip = new JSZip();
+      tasks.forEach((task, idx)=>{
+        const filename = task.imageName || sanitizeFileName(`${String(idx + 1).padStart(2,'0')}-${task.title}-${task.width}x${task.height}.png`);
+        zip.file(filename, dataUrlToUint8Array(task.image));
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `amazon-image-export-v2.7.5-${Date.now()}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setStatus('globalStatus', `ZIP 打包完成，已下载 ${tasks.length} 张图片`);
+    }
+
+    function clearSessionImages(){
+      for(const task of state.project.tasks){
+        task.image = null;
+        task.imageName = '';
+        task.logs = [];
+        if(task.imageStatus === '已生成' || task.imageStatus === '已跳过') task.imageStatus = '未生成';
+        if(task.promptStatus === '已跳过') task.promptStatus = task.prompt ? '已生成' : '未生成';
+        if(!task.requirement || !String(task.requirement).trim()) task.requirement = getDefaultRequirementByType(task.type);
+      }
+      state.project.referenceImages = [];
+      state.project.referenceImageNames = [];
+      state.project.selectedReferenceImageId = null;
+      state.busy = false;
+      state.paused = false;
+      state.stopped = false;
+      state.batchMode = null;
+      state.batchCursor = 0;
+      renderAll();
+      setStatus('globalStatus','已清空当前会话图片缓存');
+    }
+
+    function applyDefaultReqToEmptyTasks(){
+      syncTopInputsToState();
+      let count = 0;
+      for(const task of state.project.tasks){
+        if(!String(task.requirement || '').trim()){
+          task.requirement = getDefaultRequirementByType(task.type);
+          count++;
+        }
+      }
+      renderAll();
+      setStatus('globalStatus', `已对 ${count} 个空白任务应用默认 requirement`);
+    }
+
+    function forceApplyDefaultReqAll(){
+      syncTopInputsToState();
+      let count = 0;
+      for(const task of state.project.tasks){
+        task.requirement = getDefaultRequirementByType(task.type);
+        count++;
+      }
+      renderAll();
+      setStatus('globalStatus', `已强制覆盖 ${count} 个任务的 requirement`);
+    }
+
+    function rebuildTasksKeepData(){
+      syncTopInputsToState();
+      saveCurrentTaskEditsToState();
+
+      const oldMap = new Map();
+      state.project.tasks.forEach(task=> oldMap.set(getTaskStableKey(task), task));
+
+      let newTasks = makeTasksFromSpecs(state.project.taskSpecs).map(task=>{
+        const old = oldMap.get(getTaskStableKey(task));
+        if(!old) return task;
+        return {
+          ...task,
+          stableKey: getTaskStableKey(task),
+          originIndex: old.originIndex || task.originIndex || task.index,
+          requirement: (old.requirement && String(old.requirement).trim()) ? old.requirement : getDefaultRequirementByType(task.type),
+          prompt: old.prompt || '',
+          image: old.image || null,
+          imageName: old.imageName || '',
+          promptStatus: old.promptStatus || '未生成',
+          imageStatus: old.imageStatus || (old.image ? '已生成' : '未生成'),
+          logs: old.logs || []
+        };
+      });
+
+      const currentOrderMap = new Map();
+      state.project.tasks.forEach((task, idx)=> currentOrderMap.set(getTaskStableKey(task), idx));
+
+      newTasks.sort((a,b)=>{
+        const oa = currentOrderMap.get(getTaskStableKey(a)) ?? 9999;
+        const ob = currentOrderMap.get(getTaskStableKey(b)) ?? 9999;
+        return oa - ob;
+      });
+
+      state.project.tasks = rebuildTaskIds(newTasks);
+      state.currentTaskId = state.project.tasks[0]?.id || null;
+      state.busy = false;
+      state.paused = false;
+      state.stopped = false;
+      state.batchMode = null;
+      state.batchCursor = 0;
+      renderAll();
+      setStatus('globalStatus','已按当前规格重建任务，并尽量保留旧数据');
+    }
+
+    function rebuildTasksReset(){
+      syncTopInputsToState();
+      state.project.tasks = makeTasksFromSpecs(state.project.taskSpecs);
+      state.currentTaskId = state.project.tasks[0]?.id || null;
+      state.busy = false;
+      state.paused = false;
+      state.stopped = false;
+      state.batchMode = null;
+      state.batchCursor = 0;
+      renderAll();
+      setStatus('globalStatus','已按当前规格重建任务，并清空任务数据');
+    }
+
+    function moveTaskById(sourceId, targetId){
+      saveCurrentTaskEditsToState();
+      const arr = state.project.tasks;
+      const fromIndex = arr.findIndex(t => t.id === sourceId);
+      const toIndex = arr.findIndex(t => t.id === targetId);
+      if(fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+      const [moved] = arr.splice(fromIndex, 1);
+      arr.splice(toIndex, 0, moved);
+      state.project.updatedAt = new Date().toISOString();
+      renderAll();
+      setStatus('globalStatus', `已调整任务顺序：${moved.title} → 第 ${toIndex + 1} 位`);
+    }
+
+    function bindEvents(){
+      byId('btnDetectModels').onclick = detectModels;
+      byId('btnSaveDraft').onclick = saveDraft;
+      byId('btnLoadDraft').onclick = loadDraft;
+      byId('btnExportJson').onclick = exportJson;
+      byId('btnImportJson').onclick = ()=> byId('importJsonInput').click();
+      byId('btnClearSessionImages').onclick = clearSessionImages;
+      byId('btnClearLocalStorage').onclick = clearLocalDraft;
+      byId('btnApplyDefaultReqToEmpty').onclick = applyDefaultReqToEmptyTasks;
+      byId('btnForceApplyDefaultReqAll').onclick = forceApplyDefaultReqAll;
+      byId('btnRebuildTasksKeepData').onclick = rebuildTasksKeepData;
+      byId('btnRebuildTasksReset').onclick = rebuildTasksReset;
+
+      byId('importJsonInput').addEventListener('change', e=>{
+        const file = e.target.files?.[0];
+        if(file) importJsonFile(file);
+        e.target.value = '';
+      });
+
+      byId('btnGenAllPrompts').onclick = ()=> runBatch('prompts');
+      byId('btnGenAllImages').onclick = ()=> runBatch('images');
+      byId('btnGenAllBoth').onclick = ()=> runBatch('both');
+      byId('btnPauseBatch').onclick = pauseBatch;
+      byId('btnResumeBatch').onclick = resumeBatch;
+      byId('btnStopBatch').onclick = stopBatch;
+      byId('btnExportAllImages').onclick = exportAllImages;
+      byId('btnExportZip').onclick = exportZip;
+
+      byId('btnSaveTaskEdits').onclick = ()=>{
+        saveCurrentTaskEditsToState();
+        renderAll();
+        setStatus('currentTaskStatus','当前编辑已保存到内存');
+      };
+
+      byId('btnGenPromptForCurrent').onclick = async ()=>{
+        const task = getCurrentTask();
+        if(!task) return;
+        saveCurrentTaskEditsToState();
+        try{
+          await generatePromptForTask(task, { skipIfExists: false });
+        }catch(err){
+          task.promptStatus = '失败';
+          appendTaskLog(task, '生成提示词失败：' + err.message);
+          renderAll();
+        }
+      };
+
+      byId('btnGenImageForCurrent').onclick = async ()=>{
+        const task = getCurrentTask();
+        if(!task) return;
+        saveCurrentTaskEditsToState();
+        try{
+          if(!task.prompt?.trim()) await generatePromptForTask(task, { skipIfExists:false });
+          await generateImageForTask(task, { skipIfExists: false });
+        }catch(err){
+          task.imageStatus = '失败';
+          appendTaskLog(task, '生成图片失败：' + err.message);
+          renderAll();
+        }
+      };
+
+      byId('btnDownloadCurrent').onclick = ()=>{
+        const task = getCurrentTask();
+        if(!task?.image){
+          setStatus('currentTaskStatus','当前没有可下载图片');
+          return;
+        }
+        downloadDataUrl(task.image, task.imageName || sanitizeFileName(task.title + '.png'));
+      };
+
+      byId('reqFileInput').addEventListener('change', async (e)=>{
+        const file = e.target.files?.[0];
+        if(!file) return;
+        state.project.requirementFileName = file.name;
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+        try{
+          if(['txt','md','csv','json'].includes(ext)){
+            state.project.requirementsText = await readTextFile(file);
+            setStatus('globalStatus','设计需求表已读取');
+          }else if(['xlsx','xls'].includes(ext)){
+            state.project.requirementsText = await readExcelFile(file);
+            setStatus('globalStatus','Excel 设计需求表已读取');
+          }else{
+            setStatus('globalStatus','已记录文件名，但当前前端版无法稳定解析该格式全文，请手动粘贴到文本框');
+          }
+          renderAll();
+        }catch(err){
+          setStatus('globalStatus','读取设计需求表失败：' + err.message);
+        }
+
+        e.target.value = '';
+      });
+
+      byId('refImagesInput').addEventListener('change', async (e)=>{
+        const files = Array.from(e.target.files || []);
+        if(!files.length) return;
+
+        for(const file of files){
+          const dataUrl = await fileToDataURL(file);
+          state.project.referenceImages.push({
+            id: 'ref_' + Math.random().toString(36).slice(2, 10),
+            name:file.name,
+            type:file.type,
+            dataUrl
+          });
+        }
+
+        state.project.referenceImageNames = state.project.referenceImages.map(x => x.name);
+        if(!state.project.selectedReferenceImageId && state.project.referenceImages[0]){
+          state.project.selectedReferenceImageId = state.project.referenceImages[0].id;
+        }
+        renderAll();
+        setStatus('globalStatus', `已导入 ${files.length} 张参考图（仅当前会话有效）`);
+        e.target.value = '';
+      });
+
+      [
+        'apiKey','apiBase','requirementsText','promptModel','imageModel','imageApiMode',
+        'defaultReqMain','defaultReqGallery','defaultReqApc','defaultReqAmobile',
+        'skipExistingPrompts','skipExistingImages','lockMainImage',
+        'cfg_main_count','cfg_main_width','cfg_main_height',
+        'cfg_gallery_count','cfg_gallery_width','cfg_gallery_height',
+        'cfg_apc_count','cfg_apc_width','cfg_apc_height',
+        'cfg_am_count','cfg_am_width','cfg_am_height'
+      ].forEach(id=>{
+        byId(id).addEventListener('change', ()=>{
+          syncTopInputsToState();
+          renderAll();
+        });
+      });
+    }
+
+    initProject();
+    bindEvents();
+    renderAll();
+  </script>
+</body>
+</html>
